@@ -13,5 +13,5 @@ if api_key:
    
         model="gemini-2.5-flash",
         contents=prompt,
-    )
+    
     st.write(response.text)
