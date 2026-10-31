@@ -1,5 +1,5 @@
+from google import genai
 import streamlit as st
-
 
 st.title("Mein privater KIAssistent")
 api_key = st.text_input(
@@ -7,12 +7,12 @@ api_key = st.text_input(
 )
 
 if api_key:
-    client = Client(api_key=api_key)
-    prompt = st.text_input("Wie kann ich dir helfen?")
+  client = genai.Client(api_key=api_key)
+  prompt = st.text_input("Wie kann ich dir helfen?")
 
-    if prompt:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        st.write(response.text)
+  if prompt:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+    )
+    st.write(response.text)
