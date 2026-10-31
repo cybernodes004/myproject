@@ -3,8 +3,6 @@ import os
 import sqlite3
 import hmac
 import streamlit as st
-
-import load_dotenv
 import genai
 import types
 
