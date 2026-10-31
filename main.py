@@ -15,7 +15,7 @@ import types
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
-MY_PASSWORD = os.getenv("MY_PASSWORD" cyber")
+MY_PASSWORD = os.getenv("MY_PASSWORD")
 
 DB = "sudem_memory.db"
 
