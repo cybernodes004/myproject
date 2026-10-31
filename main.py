@@ -1,490 +1,165 @@
-import streamlit as st
-import google.genai
-import google.genai.types
-import sqlite3
-import hmac
 import os
-import platform
-import subprocess
-import uuid
-from pathlib import Path
-from datetime import datetime
-from io import BytesIO
-import pypdf
+import tempfile
+from google import genai
+from google.genai import types
+from gtts import gTTS
+import PIL.Image
+import streamlit as st
 
-# =====================================
-# SUDEM AI - PERSONAL AI ASSISTANT
-# =====================================
-
+# 1. Seiteneinstellungen
 st.set_page_config(
-    page_title="SUDEM AI",
-    page_icon="🧠",
+    page_title="CYBER // Privates System",
+    page_icon="🔴",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-BASE_DIR = Path(__file__).parent
-DB_PATH = BASE_DIR / "sudem_ai.db"
+# Design (Cyberpunk / Futuristischer Dark Mode)
+st.markdown(
+    """
+    <style>
+    .stApp { background-color: #0b0b0e; color: #e0e0e0; }
+    h1, h2, h3 { color: #ff334b !important; font-family: monospace; letter-spacing: 2px; }
+    .stChatMessage { background-color: #16161d; border-radius: 10px; border: 1px solid #ff334b; }
+    .sidebar-box { background-color: #16161d; padding: 15px; border-radius: 10px; border: 1px solid #ff334b; }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
-# =====================================
-# GEHEIME EINSTELLUNGEN
-# =====================================
-
-try:
-    APP_PASSWORD = st.secrets["APP_PASSWORD"]
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-    MODEL = st.secrets.get(
-        "GEMINI_MODEL",
-        "gemini-2.5-flash"
-    )
-except Exception:
-    st.error("API-Schlüssel oder Passwort fehlen.")
-    st.stop()
-
-# =====================================
-# DATENBANK
-# =====================================
-
-def database():
-    connection = sqlite3.connect(DB_PATH)
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS memories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content TEXT NOT NULL,
-            created TEXT NOT NULL
-        )
-    """)
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id TEXT NOT NULL,
-            role TEXT NOT NULL,
-            content TEXT NOT NULL,
-            created TEXT NOT NULL
-        )
-    """)
-    connection.commit()
-    return connection
-
-def save_memory(content):
-    connection = database()
-    connection.execute(
-        "INSERT INTO memories (content, created) VALUES (?, ?)",
-        (content, datetime.now().isoformat())
-    )
-    connection.commit()
-    connection.close()
-
-def get_memories():
-    connection = database()
-    rows = connection.execute(
-        "SELECT content FROM memories ORDER BY id DESC"
-    ).fetchall()
-    connection.close()
-    return [row[0] for row in rows]
-
-def save_message(chat_id, role, content):
-    connection = database()
-    connection.execute(
-        """INSERT INTO messages
-        (chat_id, role, content, created)
-        VALUES (?, ?, ?, ?)""",
-        (
-            chat_id,
-            role,
-            content,
-            datetime.now().isoformat()
-        )
-    )
-    connection.commit()
-    connection.close()
-
-def get_messages(chat_id):
-    connection = database()
-    rows = connection.execute(
-        """SELECT role, content FROM messages
-        WHERE chat_id = ? ORDER BY id""",
-        (chat_id,)
-    ).fetchall()
-    connection.close()
-    return [
-        {"role": row[0], "content": row[1]}
-        for row in rows
-    ]
-
-database()
-
-# =====================================
-# LOGIN
-# =====================================
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    st.title("🧠 SUDEM AI")
-    st.caption("PERSONAL INTELLIGENCE SYSTEM")
-
-    password = st.text_input(
-        "ACCESS PASSWORD",
-        type="password"
-    )
-
-    if st.button("ACCESS SYSTEM"):
-        if hmac.compare_digest(password, APP_PASSWORD):
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("ACCESS DENIED")
-
-    st.stop()
-
-# =====================================
-# KI VERBINDUNG
-# =====================================
-
-try:
-    client = google.genai.Client(api_key=API_KEY)
-except Exception:
-    st.error("KI-Verbindung fehlgeschlagen.")
-    st.stop()
-
-# =====================================
-# CHAT SESSION
-# =====================================
-
-if "chat_id" not in st.session_state:
-    st.session_state.chat_id = str(uuid.uuid4())
-
-if "messages" not in st.session_state:
-    st.session_state.messages = get_messages(
-        st.session_state.chat_id
-    )
-
-# =====================================
-# SYSTEM STATUS
-# =====================================
-
-st.title("🧠 SUDEM AI")
-st.caption("PERSONAL ARTIFICIAL INTELLIGENCE")
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric("AI STATUS", "ONLINE")
-
-with col2:
-    st.metric("SYSTEM", platform.system())
-
-with col3:
-    st.metric("PYTHON", platform.python_version())
-
-with col4:
-    st.metric(
-        "MEMORIES",
-        len(get_memories())
-    )
-
-st.divider()
-
-# =====================================
-# SIDEBAR
-# =====================================
-
-with st.sidebar:
-
-    st.title("SYSTEM CONTROL")
-
-    if st.button("NEW CONVERSATION"):
-        st.session_state.chat_id = str(uuid.uuid4())
-        st.session_state.messages = []
-        st.rerun()
-
-    st.divider()
-
-    st.subheader("LONG-TERM MEMORY")
-
-    memory_input = st.text_input(
-        "Save information"
-    )
-
-    if st.button("SAVE MEMORY"):
-        if memory_input.strip():
-            save_memory(memory_input.strip())
-            st.success("Memory saved.")
-            st.rerun()
-
-    for memory in get_memories():
-        st.write("🧠", memory)
-
-    st.divider()
-
-    st.subheader("MAC CONTROL")
-
-    allowed_apps = [
-        "Finder",
-        "Safari",
-        "Calendar",
-        "Notes",
-        "Calculator",
-        "Music"
-    ]
-
-    selected_app = st.selectbox(
-        "Select application",
-        allowed_apps
-    )
-
-    if st.button("OPEN APPLICATION"):
-        try:
-            subprocess.run(
-                ["open", "-a", selected_app],
-                check=True,
-                timeout=10
-            )
-            st.success(selected_app + " opened.")
-        except Exception:
-            st.error("Application could not be opened.")
-
-    st.divider()
-
-    if st.button("LOG OUT"):
-        st.session_state.authenticated = False
-        st.rerun()
-
-# =====================================
-# SYSTEM INSTRUCTIONS
-# =====================================
-
-system_instruction = """
-You are SUDEM AI.
-
-You are a personal artificial intelligence assistant.
-
-Your responsibilities:
-- Help with daily tasks.
-- Answer questions.
-- Explain difficult subjects.
-- Help organize plans.
-- Analyze documents and images.
-- Support research and learning.
-- Give clear and honest answers.
-- Never pretend to have performed an action
-  that you have not performed.
-
-You speak German by default.
-You are friendly, intelligent and solution-oriented.
+SYSTEM_INSTRUCTION = """
+Du bist CYBER, der exklusive, hochgradig personalisierte und private KI-Assistent deines Nutzers.
+Deine Regeln:
+1. Du gehörst einzig und allein dieser Person und behandelst alle Informationen streng vertraulich.
+2. Du antwortest immer direkt, ehrlich, präzise und unbeschönigt im Stil eines fortgeschrittenen, loyalen Systems.
+3. Du merkst dir alle Details, Vorlieben und Anweisungen.
+4. Du kannst hochgeladene Dateien und Bilder analysieren.
 """
 
-memories = get_memories()
+# Session States initialisieren
+if "messages" not in st.session_state:
+  st.session_state.messages = []
+if "user_notes" not in st.session_state:
+  st.session_state.user_notes = ""
+if "authenticated" not in st.session_state:
+  st.session_state.authenticated = False
 
-if memories:
-    system_instruction += (
-        "\nPersonal memory:\n"
-        + "\n".join(memories)
-    )
+# 2. Sicheres Passwort (PIN-Schutz)
+APP_PASSWORD = "cyber"
 
-# =====================================
-# CHAT HISTORY
-# =====================================
+if not st.session_state.authenticated:
+  st.title("🔒 CYBER // GESICHERTES SYSTEM")
+  st.markdown(
+      "Dieses System ist verschlüsselt und exklusiv geschützt. Bitte gib dein"
+      " Passwort ein:"
+  )
+  entered_pass = st.text_input("System-Passwort", type="password")
+  if st.button("Zugriff anfordern"):
+    if entered_pass == APP_PASSWORD:
+      st.session_state.authenticated = True
+      st.rerun()
+    else:
+      st.error("Falsches Passwort. Zugriff verweigert.")
+  st.stop()
 
-st.subheader("AI CONVERSATION")
+# --- AB HIER IST DIE APP ENTSPERRT ---
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+# Sidebar für Einstellungen
+with st.sidebar:
+  st.title("🔴 CYBER ZENTRALE")
 
-# =====================================
-# FILE UPLOAD
-# =====================================
+  api_key = st.text_input(
+      "Gemini API-Schlüssel",
+      type="password",
+      help="Dein privater Schlüssel",
+  )
 
-uploaded_files = st.file_uploader(
-    "UPLOAD FILES",
-    type=["pdf", "png", "jpg", "jpeg", "webp"],
-    accept_multiple_files=True
+  st.divider()
+  st.subheader("🧠 Dauerhaftes Gedächtnis")
+  st.session_state.user_notes = st.text_area(
+      "Fakten, die sich CYBER merken soll:",
+      value=st.session_state.user_notes,
+      height=120,
+  )
+
+  st.divider()
+  st.subheader("📎 Datei-Speicher & Analyse")
+  uploaded_file = st.file_uploader(
+      "Bild oder Dokument hochladen", type=["png", "jpg", "jpeg", "pdf", "txt"]
+  )
+
+  st.divider()
+  if st.button("🗑️ System-Speicher löschen"):
+    st.session_state.messages = []
+    st.rerun()
+
+# Hauptansicht
+st.title("🔴 C Y B E R // SYSTEM ONLINE")
+st.caption(
+    "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory"
+    " aktiviert."
 )
 
-# =====================================
-# VOICE INPUT
-# =====================================
+if not api_key:
+  st.warning("👉 Bitte gib zuerst deinen Gemini API-Schlüssel in der Sidebar ein.")
+else:
+  client = genai.Client(api_key=api_key)
 
-st.subheader("VOICE INTERFACE")
+  # Chatverlauf anzeigen
+  for idx, msg in enumerate(st.session_state.messages):
+    with st.chat_message(msg["role"]):
+      st.markdown(msg["content"])
+      if "audio" in msg and msg["audio"]:
+        st.audio(msg["audio"], format="audio/mp3")
 
-audio = st.audio_input("Record a voice message")
+  # Eingabe
+  if prompt := st.chat_input("Befehl an CYBER eingeben..."):
+    st.chat_message("user").markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-# =====================================
-# MESSAGE PROCESSING
-# =====================================
+    full_system_context = f"{SYSTEM_INSTRUCTION}\n\nDAUERHAFTE FAKTEN ÜBER DEN NUTZER:\n{st.session_state.user_notes}"
 
-def ask_ai(prompt, audio_file=None):
+    contents_payload = []
 
-    history = get_messages(st.session_state.chat_id)
-
-    contents = []
-
-    for message in history:
-        role = (
-            "model"
-            if message["role"] == "assistant"
-            else "user"
+    if uploaded_file:
+      if uploaded_file.type.startswith("image/"):
+        img = PIL.Image.open(uploaded_file)
+        contents_payload.append(img)
+      else:
+        file_bytes = uploaded_file.read()
+        contents_payload.append(
+            types.Part.from_bytes(data=file_bytes, mime_type=uploaded_file.type)
         )
 
-        contents.append(
-            google.genai.types.Content(
-                role=role,
-                parts=[
-                    google.genai.types.Part(
-                        text=message["content"]
-                    )
-                ]
-            )
-        )
-
-    current_parts = []
-
-    if prompt:
-        current_parts.append(
-            google.genai.types.Part(text=prompt)
-        )
-
-    if uploaded_files:
-        for file in uploaded_files:
-
-            if file.type == "application/pdf":
-                reader = pypdf.PdfReader(
-                    BytesIO(file.getvalue())
-                )
-
-                pdf_text = "\n".join(
-                    page.extract_text() or ""
-                    for page in reader.pages
-                )
-
-                current_parts.append(
-                    google.genai.types.Part(
-                        text="PDF CONTENT:\n" + pdf_text
-                    )
-                )
-
-            else:
-                current_parts.append(
-                    google.genai.types.Part.from_bytes(
-                        data=file.getvalue(),
-                        mime_type=file.type
-                    )
-                )
-
-    if audio_file is not None:
-        current_parts.append(
-            google.genai.types.Part.from_bytes(
-                data=audio_file.getvalue(),
-                mime_type=audio_file.type
-            )
-        )
-
-    contents.append(
-        google.genai.types.Content(
-            role="user",
-            parts=current_parts
-        )
-    )
-
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=contents,
-        config=google.genai.types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=0.7
-        )
-    )
-
-    return response.text or "No response generated."
-
-# =====================================
-# TEXT CHAT
-# =====================================
-
-prompt = st.chat_input("Talk to Sudem AI...")
-
-if prompt:
-
-    save_message(
-        st.session_state.chat_id,
-        "user",
-        prompt
-    )
-
-    with st.chat_message("user"):
-        st.write(prompt)
+    contents_payload.append(prompt)
 
     with st.chat_message("assistant"):
+      with st.spinner("CYBER verarbeitet Daten..."):
+        try:
+          response = client.models.generate_content(
+              model="gemini-2.5-flash",
+              contents=contents_payload,
+              config=types.GenerateContentConfig(
+                  system_instruction=full_system_context,
+                  temperature=0.7,
+              ),
+          )
+          answer_text = response.text
+          st.markdown(answer_text)
 
-        with st.spinner("Sudem AI is thinking..."):
+          with tempfile.NamedTemporaryFile(
+              delete=False, suffix=".mp3"
+          ) as tmpfile:
+            tts = gTTS(text=answer_text, lang="de")
+            tts.save(tmpfile.name)
+            audio_bytes = open(tmpfile.name, "rb").read()
+            st.audio(audio_bytes, format="audio/mp3")
 
-            try:
-                answer = ask_ai(prompt)
+          st.session_state.messages.append({
+              "role": "assistant",
+              "content": answer_text,
+              "audio": audio_bytes,
+          })
 
-                st.write(answer)
-
-                save_message(
-                    st.session_state.chat_id,
-                    "assistant",
-                    answer
-                )
-
-            except Exception as error:
-                st.error("AI ERROR")
-                st.write(str(error))
-
-    st.session_state.messages = get_messages(
-        st.session_state.chat_id
-    )
-
-# =====================================
-# VOICE CHAT
-# =====================================
-
-if audio is not None:
-
-    if st.button("ANALYZE VOICE MESSAGE"):
-
-        with st.spinner("Analyzing audio..."):
-
-            try:
-                answer = ask_ai(
-                    "Listen to this audio and respond to the spoken message.",
-                    audio
-                )
-
-                st.subheader("SUDEM AI RESPONSE")
-                st.write(answer)
-
-                save_message(
-                    st.session_state.chat_id,
-                    "user",
-                    "[Voice message]"
-                )
-
-                save_message(
-                    st.session_state.chat_id,
-                    "assistant",
-                    answer
-                )
-
-                st.session_state.messages = get_messages(
-                    st.session_state.chat_id
-                )
-
-            except Exception as error:
-                st.error("VOICE ERROR")
-                st.write(str(error))
-
-# =====================================
-# FOOTER
-# =====================================
-
-st.divider()
-st.caption(
-    "SUDEM AI | PERSONAL INTELLIGENCE SYSTEM | "
-    + datetime.now().strftime("%d.%m.%Y %H:%M")
-)
+        except Exception as e:
+          st.error(f"Systemfehler: {e}")
