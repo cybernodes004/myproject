@@ -8,7 +8,8 @@ DB = "sudem_memory.db"
 
 st.set_page_config(
     page_title="Sudem AI",
-    page_icon="🧠", )
+    page_icon="🧠"
+)
   
 
 MY_PASSWORD = os.getenv("MY_PASSWORD", "")
