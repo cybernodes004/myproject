@@ -8,7 +8,7 @@
 # DESIGN
 # =====================================
 
-st.markdown("""
+("""
 <style>
 .stApp {
     background-color: #101114;
