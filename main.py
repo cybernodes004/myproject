@@ -10,7 +10,7 @@ if api_key:
   prompt = st.text_input("Wie kann ich dir helfen?")
 
   if prompt:
-    response = client.models.generate_content(
+   
         model="gemini-2.5-flash",
         contents=prompt,
     )
