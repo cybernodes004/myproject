@@ -107,7 +107,7 @@ else:
             with st.spinner("J.A.R.V.I.S. processing..."):
                 try:
                     response_packet = ai_client.models.generate_content(
-                        model="gemini-2.0-flash",
+                        model="gemini-1.5-flash",
                         contents=payload_data,
                         config=types.GenerateContentConfig(
                             system_instruction=operational_context,
