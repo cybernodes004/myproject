@@ -1,4 +1,3 @@
-from google import genai
 import streamlit as st
 
 st.title("Mein privater KIAssistent")
