@@ -4,24 +4,12 @@
 # KONFIGURATION
 # =========================
 
-
-
-API_KEY = os.getenv("GEMINI_API_KEY")
-MY_PASSWORD = os.getenv("MY_PASSWORD")
-
 DB = "sudem_memory.db"
 
 st.set_page_config(
     page_title="Sudem AI",
     page_icon="🧠",
-    layout="wide"
-)
-import streamlit as st
-import os
-import hmac
-from dotenv import load_dotenv
-
-load_dotenv()
+    layout="wide
 
 MY_PASSWORD = os.getenv("MY_PASSWORD", "")
 
