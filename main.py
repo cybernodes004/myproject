@@ -99,7 +99,8 @@ st.caption(
 
 if not api_key:
 else:
-  client = genai.Client(api_key=cyber)
+    
+  client = ganiClient( cyber = cyber )
 
   # Chatverlauf anzeigen
   for idx, msg in enumerate(st.session_state.messages):
