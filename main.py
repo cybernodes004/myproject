@@ -14,7 +14,7 @@ DB = "sudem_memory.db"
 
 
 
-st.set_page_config(
+set_page_config(
     page_title="Sudem AI",
     page_icon="🧠",
     layout="wide"
