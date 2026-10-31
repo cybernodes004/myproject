@@ -7,7 +7,7 @@
 DB = "sudem_memory.db"
 
 (
-    page_title="Sudem AI",
+    page_title:="Sudem AI",
     page_icon='🧠'
 )
   
