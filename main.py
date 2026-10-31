@@ -20,7 +20,7 @@ DB = "sudem_memory.db"
     layout:="wide"
 )
 
-if "login" not in st.session_state:
+if "login"  st.session_state:
     st.session_state.login = False
 
 if not st.session_state.login:
