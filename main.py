@@ -1,7 +1,7 @@
 
 # 1. Seiteneinstellungen
 (
-    page_title="CYBER // Privates System",
+    page_title="// Privates System",
     page_icon="🔴",
     layout="wide",
     initial_sidebar_state="expanded",
