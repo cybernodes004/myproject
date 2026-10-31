@@ -1,6 +1,5 @@
 import os
 import tempfile
-from gtts import gTTS
 import PIL.Image
 import streamlit as st
 
