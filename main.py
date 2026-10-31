@@ -95,9 +95,7 @@ st.title("🔴 C Y B E R // SYSTEM ONLINE")
 st.caption(
     "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory"
     " aktiviert."
-)
 
-api_key:
 else:
     
   client = cyber ( cyber = cyber )
