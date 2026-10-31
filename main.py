@@ -2,7 +2,6 @@
 # SUDEM AI - PRIVATE PERSONAL ASSISTANT
 # =====================================
 
-API_KEY = os.getenv("GEMINI_API_KEY")
 MY_PASSWORD = os.getenv("MY_PASSWORD", "Ananas")
 DB = "sudem_memory.db"
 
