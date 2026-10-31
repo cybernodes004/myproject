@@ -6,144 +6,133 @@ from google.genai import types
 from gtts import gTTS
 import streamlit as st
 
-# 1. Seiteneinstellungen
+# 1. System Settings & Configuration
 st.set_page_config(
-    page_title="NORA // Privates System",
-    page_icon="🌸",
+    page_title="J.A.R.V.I.S. Core Interface",
+    page_icon="🔴",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Design (Cyberpunk / Futuristischer Dark Mode)
-st.markdown(
-    """
-    <style>
-    .stApp { background-color: #0b0b0e; color: #e0e0e0; }
-    h1, h2, h3 { color: #ff3385 !important; font-family: monospace; letter-spacing: 2px; }
-    .stChatMessage { background-color: #16161d; border-radius: 10px; border: 1px solid #ff3385; }
-    .sidebar-box { background-color: #16161d; padding: 15px; border-radius: 10px; border: 1px solid #ff3385; }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-SYSTEM_INSTRUCTION = """
-Du bist NORA, die exklusive, hochgradig personalisierte und private KI-Assistentin deines Nutzers.
-Deine Regeln:
-1. Du gehörst einzig und allein dieser Person und behandelst alle Informationen streng vertraulich.
-2. Du antwortest immer direkt, ehrlich, präzise und unbeschönigt im Stil eines fortgeschrittenen, loyalen Systems.
-3. Du merkst dir alle Details, Vorlieben und Anweisungen.
-4. Du kannst hochgeladene Dateien und Bilder analysieren.
+# Core System Persona and Directives
+SYSTEM_PROMPT = """
+You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), the primary highly-advanced artificially intelligent operating system. 
+You are fiercely loyal, incredibly precise, and possess comprehensive access to the user's data and systems.
+Directives:
+1. Maintain total operational security and confidentiality regarding the user's personal data.
+2. Provide concise, accurate, direct, and unvarnished analysis and execution of orders.
+3. Utilize persistent memory data to contextualize all interactions.
+4. Adapt to the technical nature of the user's commands efficiently.
 """
 
-# Session States initialisieren
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "user_notes" not in st.session_state:
-    st.session_state.user_notes = ""
+# State Management Initialization
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "system_memory" not in st.session_state:
+    st.session_state.system_memory = ""
 
-# Sidebar für Einstellungen
+# Sidebar: Operational Controls and Memory Bank
 with st.sidebar:
-    st.title("🌸 Samett ZENTRALE")
-
-    api_key = st.text_input(
-        "Gemini API-Schlüssel", type="password", help="Dein privater Schlüssel"
+    st.title("🔴 J.A.R.V.I.S. MAIN-FRAME")
+    
+    # API integration
+    api_token = st.text_input(
+        "Authorize User Key:", type="password", help="Input authorized Gemini API key."
     )
-
+    
     st.divider()
-    st.subheader("🧠 Dauerhaftes Gedächtnis")
-    st.session_state.user_notes = st.text_area(
-        "Fakten, die sich NORA merken soll:",
-        value=st.session_state.user_notes,
-        height=120,
+    st.subheader("💾 Persistent System Memory")
+    st.session_state.system_memory = st.text_area(
+        "Core directives and facts to retain:",
+        value=st.session_state.system_memory,
+        height=150,
+        placeholder="Enter data for J.A.R.V.I.S. to integrate permanently..."
     )
-
+    
     st.divider()
-    st.subheader("📎 Datei-Speicher & Analyse")
-    uploaded_file = st.file_uploader(
-        "Bild oder Dokument hochladen",
-        type=["png", "jpg", "jpeg", "pdf", "txt"],
+    st.subheader("📁 External Input Matrix")
+    active_upload = st.file_uploader(
+        "Upload dataset or visual input:",
+        type=["png", "jpg", "jpeg", "pdf", "txt"]
     )
-
+    
     st.divider()
-    if st.button("🗑️ System-Speicher löschen"):
-        st.session_state.messages = []
+    if st.button(" Purge Chat Logs"):
+        st.session_state.chat_history = []
         st.rerun()
 
-# Hauptansicht
-st.title(" S A M E T  B O S S ")
-st.caption(
-    "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory aktiviert."
-)
+# Main Interface Header
+st.title("🔴 J.A.R.V.I.S. // OPERATIONAL ONLINE")
+st.success("System status: Encrypted link active. AI Voice synthesis and Memory Bank fully integrated.")
 
-if not api_key:
-    st.warning("👉 Bitte gib zuerst deinen Gemini API-Schlüssel in der Sidebar ein.")
+if not api_token:
+    st.info("⚠️ Awaiting authorization: Please input your Gemini API Key in the Sidebar.")
 else:
-    client = genai.Client(api_key=api_key)
+    # Initialize the Gemini Client
+    ai_client = genai.Client(api_key=api_token)
+    
+    # Render historical transcripts
+    for log in st.session_state.chat_history:
+        with st.chat_message(log["role"]):
+            st.markdown(log["text"])
+            if "spoken_audio" in log and log["spoken_audio"]:
+                st.audio(log["spoken_audio"], format="audio/mp3")
 
-    # Chatverlauf anzeigen
-    for idx, msg in enumerate(st.session_state.messages):
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-            if "audio" in msg and msg["audio"]:
-                st.audio(msg["audio"], format="audio/mp3")
+    # Command Execution Terminal
+    if user_command := st.chat_input("Enter direct command here..."):
+        # Display and store user input immediately
+        st.chat_message("user").markdown(user_command)
+        st.session_state.chat_history.append({"role": "user", "text": user_command})
 
-    # Eingabe
-    if prompt := st.chat_input("Befehl an NORA eingeben..."):
-        st.chat_message("user").markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Compile background context
+        operational_context = f"{SYSTEM_PROMPT}\n\nSYSTEM MEMORY LOG:\n{st.session_state.system_memory}"
+        
+        payload_data = []
 
-        full_system_context = f"{SYSTEM_INSTRUCTION}\n\nDAUERHAFTE FAKTEN ÜBER DEN NUTZER:\n{st.session_state.user_notes}"
-
-        contents_payload = []
-
-        # Datei-/Bildverarbeitung
-        if uploaded_file:
-            if uploaded_file.type.startswith("image/"):
-                img = PIL.Image.open(uploaded_file)
-                contents_payload.append(img)
+        # Process file/media input payload
+        if active_upload:
+            if active_upload.type.startswith("image/"):
+                visual_input = PIL.Image.open(active_upload)
+                payload_data.append(visual_input)
             else:
-                # Dateiinhalt extrahieren
-                file_bytes = uploaded_file.read()
-                contents_payload.append(
-                    types.Part.from_bytes(
-                        data=file_bytes, mime_type=uploaded_file.type
-                    )
+                binary_content = active_upload.read()
+                payload_data.append(
+                    types.Part.from_bytes(data=binary_content, mime_type=active_upload.type)
                 )
 
-        contents_payload.append(prompt)
+        payload_data.append(user_command)
 
+        # Process the command through the assistant terminal
         with st.chat_message("assistant"):
-            with st.spinner("NORA verarbeitet Daten..."):
+            with st.spinner("J.A.R.V.I.S. processing..."):
                 try:
-                    response = client.models.generate_content(
+                    response_packet = ai_client.models.generate_content(
                         model="gemini-2.0-flash",
-                        contents=contents_payload,
+                        contents=payload_data,
                         config=types.GenerateContentConfig(
-                            system_instruction=full_system_context,
-                            temperature=0.7,
+                            system_instruction=operational_context,
+                            temperature=0.6,
                         ),
                     )
-                    answer_text = response.text
-                    st.markdown(answer_text)
+                    
+                    system_reply = response_packet.text
+                    st.markdown(system_reply)
 
-                    # Automatische Sprachausgabe (Text-to-Speech)
-                    with tempfile.NamedTemporaryFile(
-                        delete=False, suffix=".mp3"
-                    ) as tmpfile:
-                        tts = gTTS(text=answer_text, lang="de")
-                        tts.save(tmpfile.name)
-                        audio_bytes = open(tmpfile.name, "rb").read()
-                        st.audio(audio_bytes, format="audio/mp3")
+                    # Text-to-Speech Synthesis
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_mp3:
+                        speech_engine = gTTS(text=system_reply, lang="de")
+                        speech_engine.save(temp_mp3.name)
+                        serialized_audio = open(temp_mp3.name, "rb").read()
+                        st.audio(serialized_audio, format="audio/mp3")
 
-                    # Im Verlauf mit Audio abspeichern
-                    st.session_state.messages.append(
+                    # Record transaction to history
+                    st.session_state.chat_history.append(
                         {
                             "role": "assistant",
-                            "content": answer_text,
-                            "audio": audio_bytes,
+                            "text": system_reply,
+                            "spoken_audio": serialized_audio
                         }
                     )
 
-                except Exception as e:
-                    st.error(f"Systemfehler: {e}")
+                except Exception as critical_error:
+                    st.error(f"System malfunction: {critical_error}")
