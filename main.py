@@ -1,5 +1,5 @@
 import streamlit as st
-from google.genai import Client
+
 
 st.title("Mein privater KIAssistent")
 api_key = st.text_input(
