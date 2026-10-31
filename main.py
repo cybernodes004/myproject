@@ -118,7 +118,7 @@ else:
             with st.spinner("CYBER verarbeitet Daten..."):
                 try:
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-1.5-flash",
                         contents=contents_payload,
                         config=types.GenerateContentConfig(
                             system_instruction=full_system_context,
