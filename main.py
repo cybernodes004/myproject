@@ -12,7 +12,7 @@ DB = "sudem_memory.db"
 )
   
 
-MY_PASSWORD = os.getenv("MY_PASSWORD", "")
+MY_PASSWORD = ("Cyber", "")
 
 st.set_page_config(
     page_title="Sudem AI",
