@@ -96,9 +96,8 @@ st.caption(
     "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory"
     " aktiviert."
 )
-else:
     
-  client = cyber ( cyber = cyber )
+client = cyber ( cyber = cyber )
 
   # Chatverlauf anzeigen
   for idx, msg in enumerate(st.session_state.messages):
