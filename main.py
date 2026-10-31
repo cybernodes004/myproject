@@ -7,8 +7,6 @@
     .stChatMessage { background-color: #16161d; border-radius: 10px; border: 1px solid #ff334b; }
     .sidebar-box { background-color: #16161d; padding: 15px; border-radius: 10px; border: 1px solid #ff334b; }
     </style>
-""",
-    unsafe_allow_html=True,
 )
 
 SYSTEM_INSTRUCTION = """
