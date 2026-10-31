@@ -1,86 +1,66 @@
 
 
-# =========================
-# KONFIGURATION
-# =========================
 
+# =====================================
+# SUDEM AI - PRIVATE PERSONAL ASSISTANT
+# =====================================
+
+load_dotenv()
+
+API_KEY = os.getenv("GEMINI_API_KEY")
+MY_PASSWORD = os.getenv("MY_PASSWORD", "Ananas")
 DB = "sudem_memory.db"
 
-(
-    page_title:="Sudem AI",
-    page_icon:='🧠'
-)
-  
-
-
-
-(
-    page_title:="Sudem AI",
-    page_icon:="🧠",
-    layout:="wide"
+st.set_page_config(
+    page_title="Sudem AI",
+    page_icon="🧠",
+    layout="wide"
 )
 
-if "login"  st.session_state:
-    st.session_state.login = False
+# =====================================
+# DESIGN
+# =====================================
 
-if not st.session_state.login:
+st.markdown("""
+<style>
+.stApp {
+    background-color: #101114;
+    color: white;
+}
+h1 {
+    color: #70D9FF;
+}
+[data-testid="stChatMessage"] {
+    background-color: #191c22;
+    border-radius: 15px;
+    padding: 12px;
+}
+section[data-testid="stSidebar"] {
+    background-color: #17191f;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    st.title("🧠 SUDEM AI")
-    st.write("Willkommen bei deiner persönlichen KI!")
+# =====================================
+# DATABASE
+# =====================================
 
-    password = st.text_input(
-        "Dein persönliches Passwort",
-        type="password"
-    )
-
-    if st.button("Einloggen"):
-        if hmac.compare_digest(password, MY_PASSWORD):
-            st.session_state.login = True
-            st.rerun()
-        else:
-            st.error("Falsches Passwort!")
-
-    st.stop()
-
-st.title("❤️ Hallo Sudem!")
-st.success("Du bist erfolgreich eingeloggt.")
-st.write("Deine persönliche KI ist bereit!")
-if not API_KEY or not MY_PASSWORD:
-    st.error("API-Schlüssel oder Passwort fehlt in .env")
-    st.stop()
-
-client = genai.Client(api_key=API_KEY)
-
-# =========================
-# LOKALE DATENBANK
-# =========================
-
-def database():
+def init_database():
     with sqlite3.connect(DB) as con:
         con.execute("""
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                role TEXT,
-                content TEXT
+                role TEXT NOT NULL,
+                content TEXT NOT NULL
             )
         """)
 
         con.execute("""
             CREATE TABLE IF NOT EXISTS memories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                content TEXT
+                content TEXT NOT NULL
             )
         """)
-
-database()
-
-
-def load_messages():
-    with sqlite3.connect(DB) as con:
-        return con.execute(
-            "SELECT role, content FROM messages ORDER BY id"
-        ).fetchall()
-
 
 def save_message(role, content):
     with sqlite3.connect(DB) as con:
@@ -89,17 +69,30 @@ def save_message(role, content):
             (role, content)
         )
 
+def get_messages():
+    with sqlite3.connect(DB) as con:
+        return con.execute(
+            "SELECT role, content FROM messages ORDER BY id"
+        ).fetchall()
 
-def load_memories():
+def get_memories():
     with sqlite3.connect(DB) as con:
         return con.execute(
             "SELECT id, content FROM memories"
         ).fetchall()
 
+def save_memory(content):
+    with sqlite3.connect(DB) as con:
+        con.execute(
+            "INSERT INTO memories (content) VALUES (?)",
+            (content,)
+        )
 
-# =========================
-# LOGIN
-# =========================
+init_database()
+
+# =====================================
+# PRIVATE LOGIN
+# =====================================
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -107,11 +100,13 @@ if "authenticated" not in st.session_state:
 if not st.session_state.authenticated:
 
     st.title("🧠 SUDEM AI")
-    st.subheader("Dein privater KI-Assistent")
+    st.subheader("Dein persönlicher KI-Assistent")
 
-    with st.form("login"):
+    st.write("Willkommen! Bitte melde dich an.")
+
+    with st.form("private_login"):
         password = st.text_input(
-            "Dein persönliches Passwort",
+            "Dein Passwort",
             type="password"
         )
 
@@ -126,65 +121,61 @@ if not st.session_state.authenticated:
 
     st.stop()
 
-# =========================
-# DESIGN
-# =========================
+# =====================================
+# API CONNECTION
+# =====================================
 
-st.markdown("""
-<style>
-.stApp {
-    background-color: #101114;
-    color: white;
-}
-h1 {
-    color: #70D9FF;
-}
-[data-testid="stChatMessage"] {
-    border-radius: 15px;
-}
-</style>
-""", unsafe_allow_html=True)
+if not API_KEY:
+    st.error("GEMINI_API_KEY fehlt in deiner .env Datei.")
+    st.stop()
 
-# =========================
-# KI-PERSÖNLICHKEIT
-# =========================
+client = genai.Client(api_key=API_KEY)
 
-SYSTEM = """
+# =====================================
+# PERSONALITY
+# =====================================
+
+SYSTEM_INSTRUCTION = """
 Du bist SUDEM AI.
 
-Du bist der persönliche digitale Assistent
-deiner Besitzerin.
+Du bist ein privater, persönlicher
+und intelligenter KI-Assistent.
 
 Deine Aufgaben:
 - Fragen beantworten
-- Informationen erklären
+- Informationen recherchieren, wenn
+  entsprechende Werkzeuge verfügbar sind
 - Probleme lösen
 - Dokumente analysieren
-- Aufgaben organisieren
-- Ideen entwickeln
+- Bilder verstehen
 - Texte schreiben
-- Bei Entscheidungen helfen
+- Aufgaben planen
+- Informationen organisieren
+- Ideen entwickeln
+
+Du sprichst Deutsch, Türkisch und Englisch.
 
 Du bist freundlich, intelligent,
-zuverlässig und diskret.
-
-Du sprichst standardmäßig Deutsch.
-Du kannst auch Türkisch und Englisch.
+hilfsbereit und diskret.
 
 Du darfst niemals behaupten,
-eine Aktion ausgeführt zu haben,
-wenn du sie nicht wirklich ausgeführt hast.
+dass du eine Aufgabe erledigt hast,
+wenn du sie nicht tatsächlich erledigt hast.
 
-Frage vor externen oder wichtigen Aktionen
+Frage vor wichtigen externen Aktionen
 immer nach Zustimmung.
 """
 
-# =========================
-# OBERFLÄCHE
-# =========================
+# =====================================
+# HEADER
+# =====================================
 
 st.title("🧠 SUDEM AI")
-st.caption("Dein persönlicher Assistent")
+st.caption("Your private personal AI assistant")
+
+# =====================================
+# SIDEBAR
+# =====================================
 
 with st.sidebar:
 
@@ -192,55 +183,67 @@ with st.sidebar:
 
     st.success("Privater Zugang aktiviert")
 
-    st.subheader("Mein Gedächtnis")
+    st.divider()
 
-    memories = load_memories()
+    st.subheader("🧠 Mein Gedächtnis")
+
+    memories = get_memories()
 
     for memory_id, memory in memories:
-        st.write("🧠", memory)
+        col1, col2 = st.columns([4, 1])
 
-    new_memory = st.text_input(
-        "Was soll ich mir merken?"
-    )
+        col1.write(memory)
 
-    if st.button("Speichern"):
-        if new_memory.strip():
+        if col2.button("✖", key=f"delete_{memory_id}"):
             with sqlite3.connect(DB) as con:
                 con.execute(
-                    "INSERT INTO memories (content) VALUES (?)",
-                    (new_memory,)
+                    "DELETE FROM memories WHERE id = ?",
+                    (memory_id,)
                 )
             st.rerun()
 
-    if st.button("Gespräch löschen"):
+    new_memory = st.text_input(
+        "Neue Erinnerung hinzufügen"
+    )
+
+    if st.button("💾 Erinnerung speichern"):
+        if new_memory.strip():
+            save_memory(new_memory.strip())
+            st.rerun()
+
+    st.divider()
+
+    uploaded_file = st.file_uploader(
+        "📎 Bild oder Dokument hochladen",
+        type=["png", "jpg", "jpeg", "webp", "pdf"]
+    )
+
+    st.divider()
+
+    if st.button("🗑️ Chat löschen"):
         with sqlite3.connect(DB) as con:
             con.execute("DELETE FROM messages")
         st.session_state.messages = []
         st.rerun()
 
-    if st.button("Abmelden"):
+    if st.button("🚪 Abmelden"):
         st.session_state.authenticated = False
         st.rerun()
 
-    uploaded_file = st.file_uploader(
-        "Bild oder PDF hochladen",
-        type=["png", "jpg", "jpeg", "webp", "pdf"]
-    )
-
-# =========================
-# CHATVERLAUF
-# =========================
+# =====================================
+# CHAT HISTORY
+# =====================================
 
 if "messages" not in st.session_state:
-    st.session_state.messages = load_messages()
+    st.session_state.messages = get_messages()
 
-for message in st.session_state.messages:
-    with st.chat_message(message[0]):
-        st.markdown(message[1])
+for role, content in st.session_state.messages:
+    with st.chat_message(role):
+        st.markdown(content)
 
-# =========================
-# EINGABE
-# =========================
+# =====================================
+# CHAT INPUT
+# =====================================
 
 prompt = st.chat_input(
     "Was soll ich für dich erledigen?"
@@ -257,20 +260,24 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Persönliches Gedächtnis laden
+    # Persönliche Erinnerungen laden
+    memories = get_memories()
+
     memory_text = "\n".join(
-        memory[1] for memory in load_memories()
+        item[1] for item in memories
     )
 
-    instructions = SYSTEM + """
+    personal_context = (
+        SYSTEM_INSTRUCTION
+        + "\n\nPersönliches Gedächtnis:\n"
+        + memory_text
+    )
 
-    PERSÖNLICHE ERINNERUNGEN:
-    """ + memory_text
-
+    # Gesprächsverlauf vorbereiten
     contents = []
 
-    # Letzte 20 Nachrichten als Kontext
-    for role, content in st.session_state.messages[-20:-1]:
+    for role, content in st.session_state.messages[-21:-1]:
+
         contents.append(
             types.Content(
                 role="user" if role == "user" else "model",
@@ -284,8 +291,9 @@ if prompt:
         types.Part.from_text(text=prompt)
     ]
 
-    # Datei hinzufügen
+    # Bild oder PDF hinzufügen
     if uploaded_file:
+
         current_parts.append(
             types.Part.from_bytes(
                 data=uploaded_file.getvalue(),
@@ -300,25 +308,25 @@ if prompt:
         )
     )
 
-    # KI AUSFÜHREN
+    # KI ANTWORT
     with st.chat_message("assistant"):
 
-        with st.spinner("Sudem AI arbeitet..."):
+        with st.spinner("Sudem AI denkt nach..."):
 
             try:
+
                 response = client.models.generate_content(
                     model="gemini-2.5-flash",
                     contents=contents,
                     config=types.GenerateContentConfig(
-                        system_instruction=instructions,
+                        system_instruction=personal_context,
                         temperature=0.7
                     )
                 )
 
-                answer = response.text
-
-                if not answer:
-                    answer = "Ich konnte keine Textantwort erstellen."
+                answer = response.text or (
+                    "Ich konnte keine Textantwort erstellen."
+                )
 
                 st.markdown(answer)
 
@@ -330,3 +338,9 @@ if prompt:
 
             except Exception as error:
                 st.error(f"Fehler: {error}")
+
+st.divider()
+
+st.caption(
+    "🔒 SUDEM AI | Private Personal Assistant"
+)
