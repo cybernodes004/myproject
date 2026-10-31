@@ -1,5 +1,3 @@
-Here is the complete, correctly indented code for your main dot p y file.
-
 import streamlit as st
 from google.genai import Client
 
