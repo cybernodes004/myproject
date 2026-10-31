@@ -98,9 +98,8 @@ st.caption(
 )
 
 if not api_key:
-  st.warning("👉 Bitte gib zuerst deinen Gemini API-Schlüssel in der Sidebar ein.")
 else:
-  client = genai.Client(api_key=api_key)
+  client = genai.Client(api_key=cyber)
 
   # Chatverlauf anzeigen
   for idx, msg in enumerate(st.session_state.messages):
