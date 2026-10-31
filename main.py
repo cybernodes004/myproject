@@ -44,7 +44,7 @@ if "user_notes" not in st.session_state:
 
 # Sidebar für Einstellungen
 with st.sidebar:
-    st.title("🌸 STELIII ZENTRALE")
+    st.title("🌸 Samett ZENTRALE")
 
     api_key = st.text_input(
         "Gemini API-Schlüssel", type="password", help="Dein privater Schlüssel"
@@ -71,7 +71,7 @@ with st.sidebar:
         st.rerun()
 
 # Hauptansicht
-st.title(" S T E L I O S ")
+st.title(" S A M E T  B O S S ")
 st.caption(
     "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory aktiviert."
 )
