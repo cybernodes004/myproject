@@ -97,10 +97,10 @@ st.caption(
     " aktiviert."
 )
 
-if not api_key:
+api_key:
 else:
     
-  client = ganiClient( cyber = cyber )
+  client = cyber ( cyber = cyber )
 
   # Chatverlauf anzeigen
   for idx, msg in enumerate(st.session_state.messages):
