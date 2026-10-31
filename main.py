@@ -1,5 +1,5 @@
 # Design (Cyberpunk / Futuristischer Dark Mode)
-st.markdown(
+(
     """
     <style>
     .stApp { background-color: #0b0b0e; color: #e0e0e0; }
