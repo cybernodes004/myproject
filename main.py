@@ -17,7 +17,7 @@ DB = "sudem_memory.db"
 (
     page_title:="Sudem AI",
     page_icon:="🧠",
-    layout="wide"
+    layout:="wide"
 )
 
 if "login" not in st.session_state:
