@@ -2,7 +2,7 @@
 # SUDEM AI - PRIVATE PERSONAL ASSISTANT
 # =====================================
 
-MY_PASSWORD = os.getenv("MY_PASSWORD", "Ananas")
+
 DB = "sudem_memory.db"
 
 st.set_page_config(
