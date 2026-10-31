@@ -71,7 +71,7 @@ with st.sidebar:
         st.rerun()
 
 # Hauptansicht
-st.title("∂ N O R A // SYSTEM ONLINE")
+st.title(" N O R A ")
 st.caption(
     "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory aktiviert."
 )
