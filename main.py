@@ -6,7 +6,7 @@
 
 DB = "sudem_memory.db"
 
-"st_set_page_config" (
+(
     page_title="Sudem AI",
     page_icon='🧠'
 )
