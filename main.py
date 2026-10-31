@@ -8,8 +8,8 @@ import streamlit as st
 
 # 1. Seiteneinstellungen
 st.set_page_config(
-    page_title="CYBER // Privates System",
-    page_icon="🔴",
+    page_title="NORA // Privates System",
+    page_icon="🌸",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -19,16 +19,16 @@ st.markdown(
     """
     <style>
     .stApp { background-color: #0b0b0e; color: #e0e0e0; }
-    h1, h2, h3 { color: #ff334b !important; font-family: monospace; letter-spacing: 2px; }
-    .stChatMessage { background-color: #16161d; border-radius: 10px; border: 1px solid #ff334b; }
-    .sidebar-box { background-color: #16161d; padding: 15px; border-radius: 10px; border: 1px solid #ff334b; }
+    h1, h2, h3 { color: #ff3385 !important; font-family: monospace; letter-spacing: 2px; }
+    .stChatMessage { background-color: #16161d; border-radius: 10px; border: 1px solid #ff3385; }
+    .sidebar-box { background-color: #16161d; padding: 15px; border-radius: 10px; border: 1px solid #ff3385; }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
 SYSTEM_INSTRUCTION = """
-Du bist CYBER, der exklusive, hochgradig personalisierte und private KI-Assistent deines Nutzers.
+Du bist NORA, die exklusive, hochgradig personalisierte und private KI-Assistentin deines Nutzers.
 Deine Regeln:
 1. Du gehörst einzig und allein dieser Person und behandelst alle Informationen streng vertraulich.
 2. Du antwortest immer direkt, ehrlich, präzise und unbeschönigt im Stil eines fortgeschrittenen, loyalen Systems.
@@ -44,7 +44,7 @@ if "user_notes" not in st.session_state:
 
 # Sidebar für Einstellungen
 with st.sidebar:
-    st.title("🔴 CYBER ZENTRALE")
+    st.title("🌸 NORA ZENTRALE")
 
     api_key = st.text_input(
         "Gemini API-Schlüssel", type="password", help="Dein privater Schlüssel"
@@ -53,7 +53,7 @@ with st.sidebar:
     st.divider()
     st.subheader("🧠 Dauerhaftes Gedächtnis")
     st.session_state.user_notes = st.text_area(
-        "Fakten, die sich CYBER merken soll:",
+        "Fakten, die sich NORA merken soll:",
         value=st.session_state.user_notes,
         height=120,
     )
@@ -71,7 +71,7 @@ with st.sidebar:
         st.rerun()
 
 # Hauptansicht
-st.title("🔴 C Y B E R // SYSTEM ONLINE")
+st.title("🌸 N O R A // SYSTEM ONLINE")
 st.caption(
     "Verschlüsselte Verbindung aktiv. Sprachausgabe und Langzeit-Memory aktiviert."
 )
@@ -85,12 +85,11 @@ else:
     for idx, msg in enumerate(st.session_state.messages):
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            # Wenn eine Audiospur für diese Nachricht existiert, direkt anzeigen
             if "audio" in msg and msg["audio"]:
                 st.audio(msg["audio"], format="audio/mp3")
 
     # Eingabe
-    if prompt := st.chat_input("Befehl an CYBER eingeben..."):
+    if prompt := st.chat_input("Befehl an NORA eingeben..."):
         st.chat_message("user").markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -115,7 +114,7 @@ else:
         contents_payload.append(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("CYBER verarbeitet Daten..."):
+            with st.spinner("NORA verarbeitet Daten..."):
                 try:
                     response = client.models.generate_content(
                         model="gemini-1.5-flash",
