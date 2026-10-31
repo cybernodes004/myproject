@@ -1,10 +1,4 @@
 
-import os
-import sqlite3
-import hmac
-import streamlit as st
-import genai
-import types
 
 # =========================
 # KONFIGURATION
