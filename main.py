@@ -6,7 +6,7 @@ api_key = st.text_input(
 )
 
 if api_key:
-  client = genai.Client(api_key=api_key)
+ 
   prompt = st.text_input("Wie kann ich dir helfen?")
 
   if prompt:
