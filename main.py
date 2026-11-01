@@ -1,138 +1,163 @@
-import os
-import tempfile
-import PIL.Image
-from google import genai
-from google.genai import types
-from gtts import gTTS
-import streamlit as st
 
-# 1. System Settings & Configuration
-st.set_page_config(
-    page_title="J.A.R.V.I.S. Core Interface",
-    page_icon="🔴",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+import time
+import subprocess
+import requests
+import speech_recognition as sr
+import sounddevice as sd
+import numpy as np
 
-# Core System Persona and Directives
-SYSTEM_PROMPT = """
-You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), the primary highly-advanced artificially intelligent operating system. 
-You are fiercely loyal, incredibly precise, and possess comprehensive access to the user's data and systems.
-Directives:
-1. Maintain total operational security and confidentiality regarding the user's personal data.
-2. Provide concise, accurate, direct, and unvarnished analysis and execution of orders.
-3. Utilize persistent memory data to contextualize all interactions.
-4. Adapt to the technical nature of the user's commands efficiently.
-"""
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL = "llama3.2:3b"
 
-# State Management Initialization
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "system_memory" not in st.session_state:
-    st.session_state.system_memory = ""
+MICROPHONE = 0
+SAMPLE_RATE = 16000
+SPEAK_PROGRAM = "/usr/bin/say"
 
-# Sidebar: Operational Controls and Memory Bank
-with st.sidebar:
-    st.title("🔴 J.A.R.V.I.S. MAIN-FRAME")
-    
-    # API integration
-    api_token = st.text_input(
-        "Authorize User Key:", type="password", help="Input authorized Gemini API key."
+recognizer = sr.Recognizer()
+
+
+def speak(text):
+    print("\nNORA:", text, flush=True)
+    subprocess.run(
+        [SPEAK_PROGRAM, str(text)],
+        check=False
     )
-    
-    st.divider()
-    st.subheader("💾 Persistent System Memory")
-    st.session_state.system_memory = st.text_area(
-        "Core directives and facts to retain:",
-        value=st.session_state.system_memory,
-        height=150,
-        placeholder="Enter data for J.A.R.V.I.S. to integrate permanently..."
+
+
+def record_audio(seconds):
+    print("NORA hört zu ...", flush=True)
+
+    recording = sd.rec(
+        int(seconds * SAMPLE_RATE),
+        samplerate=SAMPLE_RATE,
+        channels=1,
+        dtype="int16",
+        device=MICROPHONE
     )
-    
-    st.divider()
-    st.subheader("📁 External Input Matrix")
-    active_upload = st.file_uploader(
-        "Upload dataset or visual input:",
-        type=["png", "jpg", "jpeg", "pdf", "txt"]
+
+    sd.wait()
+
+    audio_bytes = np.asarray(recording).tobytes()
+
+    return sr.AudioData(
+        audio_bytes,
+        SAMPLE_RATE,
+        2
     )
-    
-    st.divider()
-    if st.button(" Purge Chat Logs"):
-        st.session_state.chat_history = []
-        st.rerun()
 
-# Main Interface Header
-st.title("🔴 J.A.R.V.I.S. // OPERATIONAL ONLINE")
-st.success("System status: Encrypted link active. AI Voice synthesis and Memory Bank fully integrated.")
 
-if not api_token:
-    st.info("⚠️ Awaiting authorization: Please input your Gemini API Key in the Sidebar.")
-else:
-    # Initialize the Gemini Client
-    ai_client = genai.Client(api_key=api_token)
-    
-    # Render historical transcripts
-    for log in st.session_state.chat_history:
-        with st.chat_message(log["role"]):
-            st.markdown(log["text"])
-            if "spoken_audio" in log and log["spoken_audio"]:
-                st.audio(log["spoken_audio"], format="audio/mp3")
+def recognize_audio(audio):
+    return recognizer.recognize_google(
+        audio,
+        language="de-DE"
+    )
 
-    # Command Execution Terminal
-    if user_command := st.chat_input("Enter direct command here..."):
-        # Display and store user input immediately
-        st.chat_message("user").markdown(user_command)
-        st.session_state.chat_history.append({"role": "user", "text": user_command})
 
-        # Compile background context
-        operational_context = f"{SYSTEM_PROMPT}\n\nSYSTEM MEMORY LOG:\n{st.session_state.system_memory}"
-        
-        payload_data = []
+def ask_nora(command):
 
-        # Process file/media input payload
-        if active_upload:
-            if active_upload.type.startswith("image/"):
-                visual_input = PIL.Image.open(active_upload)
-                payload_data.append(visual_input)
-            else:
-                binary_content = active_upload.read()
-                payload_data.append(
-                    types.Part.from_bytes(data=binary_content, mime_type=active_upload.type)
-                )
+    system = """
+    Du bist NORA, Sudems persönliche KI-Assistentin im Stil von JARVIS.
 
-        payload_data.append(user_command)
+    Du bist intelligent, loyal, aufmerksam und humorvoll.
+    Du sprichst natürlich und selbstbewusst.
+    Du antwortest auf Deutsch, wenn Sudem Deutsch spricht.
+    Du antwortest auf Türkisch, wenn Sudem Türkisch spricht.
+    Englisch nur auf ausdrücklichen Wunsch.
 
-        # Process the command through the assistant terminal
-        with st.chat_message("assistant"):
-            with st.spinner("J.A.R.V.I.S. processing..."):
-                try:
-                    response_packet = ai_client.models.generate_content(
-                        
-                        contents=payload_data,
-                        config=types.GenerateContentConfig(
-                            system_instruction=operational_context,
-                            temperature=0.6,
-                        ),
-                    )
-                    
-                    system_reply = response_packet.text
-                    st.markdown(system_reply)
+    Du nennst deine Benutzerin Sudem.
+    Du erfindest keine erledigten Aktionen.
+    """
 
-                    # Text-to-Speech Synthesis
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_mp3:
-                        speech_engine = gTTS(text=system_reply, lang="de")
-                        speech_engine.save(temp_mp3.name)
-                        serialized_audio = open(temp_mp3.name, "rb").read()
-                        st.audio(serialized_audio, format="audio/mp3")
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system
+                },
+                {
+                    "role": "user",
+                    "content": command
+                }
+            ],
+            "stream": False
+        },
+        timeout=180
+    )
 
-                    # Record transaction to history
-                    st.session_state.chat_history.append(
-                        {
-                            "role": "assistant",
-                            "text": system_reply,
-                            "spoken_audio": serialized_audio
-                        }
-                    )
+    response.raise_for_status()
 
-                except Exception as critical_error:
-                    st.error(f"System malfunction: {critical_error}")
+    return response.json()["message"]["content"]
+
+
+def main():
+
+    print("==============================")
+    print("       NORA JARVIS")
+    print("       ONLINE SYSTEM")
+    print("==============================")
+
+    speak("Nora ist bereit. Ich höre.")
+
+    while True:
+
+        try:
+
+            audio = record_audio(3)
+
+            try:
+                heard = recognize_audio(audio).lower()
+                print("ERKANNT:", heard)
+
+            except sr.UnknownValueError:
+                continue
+
+            except sr.RequestError as error:
+                print("Spracherkennungsfehler:", error)
+                time.sleep(3)
+                continue
+
+            if "nora" not in heard:
+                continue
+
+            speak("Ja, Sudem. Ich höre.")
+
+            command_audio = record_audio(8)
+
+            try:
+                command = recognize_audio(command_audio)
+
+            except sr.UnknownValueError:
+                speak("Das habe ich nicht verstanden.")
+                continue
+
+            except sr.RequestError:
+                speak("Meine Spracherkennung ist gerade nicht erreichbar.")
+                continue
+
+            print("DEIN BEFEHL:", command)
+
+            try:
+                answer = ask_nora(command)
+                speak(answer)
+
+            except requests.exceptions.ConnectionError:
+                speak("Ich kann Ollama nicht erreichen.")
+
+            except Exception as error:
+                print("KI-FEHLER:", repr(error))
+                speak("Bei meiner Antwort ist ein Fehler aufgetreten.")
+
+        except KeyboardInterrupt:
+            speak("Bis später, Sudem.")
+            break
+
+        except Exception as error:
+            print("SYSTEMFEHLER:", repr(error))
+            time.sleep(3)
+
+
+if __name__ == "__main__":
+    main()
